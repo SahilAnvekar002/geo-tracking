@@ -24,18 +24,17 @@ export default function CustomSidebar({
   user: { name: string; role: string };
 }) {
   return (
-    <Sidebar variant="sidebar" className="border-accent/30">
+    <Sidebar variant="sidebar">
       <CustomSideBarHeader />
       <SidebarContent>
         {Object.keys(appSidebarConfig).map((group) => {
           if (appSidebarConfig[group]?.length == 1)
             return (
-              <SidebarGroup key={group} className="-mb-4">
+              <SidebarGroup key={group}>
                 <SidebarMenu>
                   <SidebarMenuItem>
                     <MenuButton>
                       <Link
-                      className="h-10"
                         href={appSidebarConfig[group][0]?.href ?? "/not-found"}
                       >
                         {appSidebarConfig[group][0]?.icon as ReactNode}

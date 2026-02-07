@@ -2,7 +2,7 @@ import { SidebarHeader } from "../ui/sidebar";
 
 export default function CustomSideBarHeader() {
   return (
-    <SidebarHeader className="flex flex-col gap-2 py-10">
+    <SidebarHeader className="flex flex-col gap-2 border-b">
       <div className="flex gap-2">
         {/* <Image
           src="/logo.png"

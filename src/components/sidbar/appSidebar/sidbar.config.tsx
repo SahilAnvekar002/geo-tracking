@@ -6,7 +6,7 @@ import {
 export const applicationSidebarConfig: SidebarConfig = {
   UserManagement: [
     {
-      title: "Users",
+      title: "Dashboard",
       href: "/dashboard",
       icon: <User />,
       minimumAccessRole: "admin",

@@ -8,9 +8,9 @@ export function CustomTrigger() {
   return (
     <button onClick={toggleSidebar} className="cursor-pointer">
       {open ? (
-        <PanelLeftClose size={22} strokeWidth={2} className="text-white" />
+        <PanelLeftClose size={22} strokeWidth={2} />
       ) : (
-        <PanelLeftOpen size={22} strokeWidth={2} className="text-white" />
+        <PanelLeftOpen size={22} strokeWidth={2} />
       )}
     </button>
   );
