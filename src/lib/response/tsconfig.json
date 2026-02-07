@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    //"outDir": "dist"
+    "baseUrl": ".",
+    "declaration": true,
+    "declarationMap": true,
+    "paths": {
+      "@cyberdreams/response": ["./index.ts"]
+    },
+    "module": "ES2022",
+    "moduleResolution": "node"
+  },
+  "include": ["."],
+  "exclude": ["node_modules", "dist"]
+}

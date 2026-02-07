@@ -18,8 +18,8 @@ model Location {
   id String @id @default(auto()) @map("_id") @db.ObjectId
 
   // Inputs
-  lat  String
-  long String
+  lat  Float
+  long Float
 
   // Metadata
   userId    String
