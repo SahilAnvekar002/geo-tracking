@@ -9,3 +9,9 @@ export const registerEmployeeSchema = z.object({
     .regex(/^\d{10}$/, "Contact number must be exactly 10 digits"),
   designation: z.string().min(2, "Designation must have atleast 2 charachters"),
 });
+
+export const employeeEmailSchema = z.object({
+  email: z.email("Invalid Email"),
+});
+
+export type TEmployee = z.input<typeof registerEmployeeSchema>;

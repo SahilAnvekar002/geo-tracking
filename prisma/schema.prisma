@@ -13,23 +13,65 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// LOCATION SCHEMA
-model Location {
+// --------------- ENUMS -----------------
+// LEAVE STATUS
+enum LeaveStatus {
+  NONE
+  FULL
+  HALF
+}
+
+// PUNCH TYPE
+enum PunchType {
+  IN
+  OUT
+}
+
+// --------------- MODELS -----------------
+// ATTENDANCE SCHEMA
+model Attendance {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  // Calculations
+  totalWorkMinutes Int @default(0)
+  overtimeMinutes  Int @default(0)
+
+  // Inputs
+  lateInReason   String?
+  earlyOutReason String?
+  leaveStatus    LeaveStatus @default(NONE)
+
+  // Relations
+  employeeId String   @db.ObjectId
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  punch      Punch[]
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("attendance")
+}
+
+// PUNCH SCHEMA
+model Punch {
   id String @id @default(auto()) @map("_id") @db.ObjectId
 
   // Inputs
   lat         Float
   long        Float
   displayName String
+  type        PunchType
 
-  // Metadata
-  employeeId String   @db.ObjectId
-  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict)
-  isDeleted  Boolean  @default(false)
+  // Relations
+  attendanceId String     @db.ObjectId
+  attendance   Attendance @relation(fields: [attendanceId], references: [id], onDelete: Restrict)
 
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@map("punch")
 }
 
 // EMPLOYEE SCHEMA
@@ -50,11 +92,13 @@ model Employee {
   token        String? // temporary challenge
 
   //Relations
-  Location Location[]
+  attendance Attendance[]
 
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@map("employee")
 }
 
 // USER MANAGEMENT
