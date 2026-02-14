@@ -11,6 +11,8 @@ import { AttendanceWithRelations } from "@/actions/attendance.actions";
 import { toast } from "sonner";
 import { ReportTable } from "../report/table/report.table";
 import { getMonthlyTableData } from "@/utils/generateMonthlyReport";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+import { EmployeeLocationCalendar } from "./employeeCalendar";
 
 const EmployeeDetails = ({
   employee,
@@ -235,8 +237,18 @@ const EmployeeDetails = ({
               Generate Report
             </Button>
           </div>
-          {/* <EmployeeLocationCalendar attendance={employee.attendance} selectedDate={selectedDate} /> */}
-          <ReportTable reports={monthlyReports} />
+          <Tabs defaultValue="table">
+            <TabsList>
+              <TabsTrigger value="table">Table View</TabsTrigger>
+              <TabsTrigger value="calendar">Calendar View</TabsTrigger>
+            </TabsList>
+            <TabsContent value="table">
+              <ReportTable reports={monthlyReports} />
+            </TabsContent>
+            <TabsContent value="calendar">
+              <EmployeeLocationCalendar attendance={employee.attendance} selectedDate={selectedDate} />
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>
