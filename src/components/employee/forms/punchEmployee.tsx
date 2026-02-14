@@ -26,11 +26,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { LeaveStatus, PunchType } from "@prisma/client";
 import { Textarea } from "@/components/ui/textarea";
 import { getEmployeeById } from "@/actions/employee.actions";
+import { useRouter } from "next/navigation";
 
 // const MARK_LOCATION_KEY = "mark_location_lock";
 // const LOCK_DURATION_MS = 8 * 60 * 60 * 1000; // 8 hours
 
 export default function PunchEmployee({ employeeId, attendance }: { employeeId: string; attendance: AttendanceWithRelations | undefined }) {
+
+  const router = useRouter();
+
   const form = useForm<z.input<typeof attendanceSchema>>({
     resolver: zodResolver(attendanceSchema),
     defaultValues: {
@@ -106,10 +110,17 @@ export default function PunchEmployee({ employeeId, attendance }: { employeeId: 
           const longitude = position.coords.longitude;
 
           const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
+            `/api/geo/reverse-geocode?lat=${latitude}&lon=${longitude}`
           );
+
+          if (!res.ok) {
+            setLoading(false);
+            toast.error("Cannot capture location. Try again later");
+            return;
+          }
+
           const data = await res.json();
-          const displayName = data.display_name || 'Unknown';
+          const displayName = data.address || 'Unknown';
 
           const response = await markAttendance({
             attendanceData: {
@@ -134,6 +145,11 @@ export default function PunchEmployee({ employeeId, attendance }: { employeeId: 
 
           setLoading(false);
           toast.success("Attendance marked successfully");
+          form.reset({
+            earlyOutReason: undefined,
+            lateInReason: undefined,
+          });
+          router.refresh();
           // const expiresAt = Date.now() + LOCK_DURATION_MS;
           // localStorage.setItem(MARK_LOCATION_KEY, expiresAt.toString());
         },
@@ -313,7 +329,7 @@ export default function PunchEmployee({ employeeId, attendance }: { employeeId: 
                           />
                         </div>}
                       <div className="flex flex-col gap-3">
-                        <Button type="submit" disabled={loading || (attendance?.leaveStatus && punchIns > 0 && punchOuts > 0 )}>
+                        <Button type="submit" disabled={loading || (attendance?.leaveStatus && punchIns > 0 && punchOuts > 0)}>
                           {loading ? (
                             <Loader2 className="animate-spin" />
                           ) : (
