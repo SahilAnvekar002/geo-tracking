@@ -2,7 +2,7 @@ import { LeaveStatus, PunchType } from "@prisma/client";
 import z from "zod";
 
 export const attendanceSchema = z.object({
-  email: z.email("Invalid Email"),
+  // email: z.email("Invalid Email"),
   punchType: z.enum(PunchType).optional(),
   lateInReason: z.string().optional(),
   earlyOutReason: z.string().optional(),

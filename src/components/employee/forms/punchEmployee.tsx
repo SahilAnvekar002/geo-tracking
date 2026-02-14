@@ -7,7 +7,6 @@ import {
   FormItem,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -17,21 +16,21 @@ import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
 import { FieldGroup } from "@/components/ui/field";
 import { startAuthentication } from "@simplewebauthn/browser";
 import Image from "next/image";
-import { markAttendance } from "@/actions/attendance.actions";
+import { AttendanceWithRelations, markAttendance } from "@/actions/attendance.actions";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { attendanceSchema } from "@/lib/schema/attendance.schema";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LeaveStatus, PunchType } from "@prisma/client";
 import { Textarea } from "@/components/ui/textarea";
+import { getEmployeeById } from "@/actions/employee.actions";
 
 // const MARK_LOCATION_KEY = "mark_location_lock";
 // const LOCK_DURATION_MS = 8 * 60 * 60 * 1000; // 8 hours
 
-export default function PunchEmployee() {
+export default function PunchEmployee({ employeeId, attendance }: { employeeId: string; attendance: AttendanceWithRelations | undefined }) {
   const form = useForm<z.input<typeof attendanceSchema>>({
     resolver: zodResolver(attendanceSchema),
     defaultValues: {
@@ -45,16 +44,27 @@ export default function PunchEmployee() {
   const leaveStatus = form.watch("leaveStatus");
   const [loading, setLoading] = useState<boolean>(false);
 
+  const punchIns = attendance ? attendance.punch.filter(p => p.type == 'IN').length : 0
+  const punchOuts = attendance ? attendance.punch.filter(p => p.type == 'OUT').length : 0
+
   const onSubmit = async (values: z.input<typeof attendanceSchema>) => {
 
     try {
       setLoading(true);
 
+      const employeeRes = await getEmployeeById(employeeId);
+
+      if (employeeRes.status == 'ERROR' || !employeeRes.data) {
+        setLoading(false);
+        toast.error(employeeRes.message);
+        return;
+      }
+
       // 1️⃣ Get auth options
       const optRes = await fetch("/api/webauthn/authenticate/options", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: values.email }),
+        body: JSON.stringify({ email: employeeRes.data.email }),
       });
 
       const options = await optRes.json();
@@ -68,7 +78,7 @@ export default function PunchEmployee() {
       const verifyRes = await fetch("/api/webauthn/authenticate/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: values.email, credential }),
+        body: JSON.stringify({ email: employeeRes.data.email, credential }),
       });
 
       if (!verifyRes.ok) {
@@ -107,7 +117,7 @@ export default function PunchEmployee() {
               earlyOutReason: values.earlyOutReason,
               lateInReason: values.lateInReason
             },
-            employeeEmail: values.email,
+            employeeId: employeeId,
             punchData: {
               displayName,
               lat: latitude,
@@ -175,7 +185,7 @@ export default function PunchEmployee() {
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)}>
                     <div className="flex flex-col gap-6">
-                      <div className="grid gap-3">
+                      {/* <div className="grid gap-3">
                         <FormField
                           control={form.control}
                           name="email"
@@ -187,8 +197,11 @@ export default function PunchEmployee() {
                             </FormItem>
                           )}
                         />
-                      </div>
-                      <div className="grid gap-3">
+                      </div> */}
+                      {attendance?.leaveStatus && punchIns > 0 && punchOuts > 0 && <div className="text-center">
+                        Attendance already marked for today.<br /> Try again tomorrow
+                      </div>}
+                      {!attendance?.leaveStatus && <div className="grid gap-3">
                         <FormField
                           control={form.control}
                           name="leaveStatus"
@@ -231,8 +244,8 @@ export default function PunchEmployee() {
                             );
                           }}
                         />
-                      </div>
-                      <div className="grid gap-3">
+                      </div>}
+                      {!(punchIns > 0 && punchOuts > 0) && <div className="grid gap-3">
                         <FormField
                           control={form.control}
                           name="punchType"
@@ -251,14 +264,17 @@ export default function PunchEmployee() {
                                       </SelectTrigger>
                                     </FormControl>
                                     <SelectContent className="w-full" position="popper">
-                                      {Object.keys(PunchType).map((type) => (
-                                        <SelectItem
-                                          value={type}
-                                          key={type}
-                                        >
-                                          {type}
-                                        </SelectItem>
-                                      ))}
+                                      {Object.keys(PunchType)
+                                        .filter((type) => {
+                                          if (type === "IN" && punchIns > 0) return false;
+                                          if (type === "OUT" && punchOuts > 0) return false;
+                                          return true;
+                                        })
+                                        .map((type) => (
+                                          <SelectItem value={type} key={type}>
+                                            {type}
+                                          </SelectItem>
+                                        ))}
                                     </SelectContent>
                                   </Select>
                                 </div>
@@ -267,7 +283,7 @@ export default function PunchEmployee() {
                             );
                           }}
                         />
-                      </div>
+                      </div>}
                       {punchType == 'IN' && hours > 9 &&
                         <div className="grid gap-3">
                           <FormField
@@ -297,17 +313,17 @@ export default function PunchEmployee() {
                           />
                         </div>}
                       <div className="flex flex-col gap-3">
-                        <Button type="submit" disabled={loading}>
+                        <Button type="submit" disabled={loading || (attendance?.leaveStatus && punchIns > 0 && punchOuts > 0 )}>
                           {loading ? (
                             <Loader2 className="animate-spin" />
                           ) : (
                             "Punch"
                           )}
                         </Button>
-                        <div className="flex flex-col gap-1">
+                        {/* <div className="flex flex-col gap-1">
                           <p className="text-muted-foreground text-sm text-center">Don{"'"}t have an account? <Link href="/signup" className="underline">Register</Link> here</p>
                           <p className="text-muted-foreground text-sm text-center">Login as an admin? <Link href="/login" className="underline">Click</Link> here</p>
-                        </div>
+                        </div> */}
                       </div>
                     </div>
                   </form>
